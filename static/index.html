@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommitCraft AI | Premium Git Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glow-mesh"></div>
+    
+    <div class="app-wrapper">
+        <header>
+            <div class="brand">
+                <span class="brand-icon">🚀</span>
+                <h1>CommitCraft <span class="gradient-text">AI</span></h1>
+            </div>
+            <p class="subtitle">Agentic Git intelligence for perfect commit history</p>
+        </header>
+
+        <main>
+            <section class="config-card">
+                <div class="form-group">
+                    <div class="label-row">
+                        <label for="repo-path">Local Repository</label>
+                    </div>
+                    <div class="input-container">
+                        <span class="icon">📁</span>
+                        <input type="text" id="repo-path" placeholder="C:\Path\To\Your\Repo" value="D:\AntigravityProjects\CommitCraft">
+                        <button id="browse-btn" class="btn btn-secondary">Browse</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-row">
+                        <label for="query-input">Agent Instructions</label>
+                    </div>
+                    <div class="input-container">
+                        <span class="icon">🧠</span>
+                        <input type="text" id="query-input" placeholder="e.g. Write a feature commit for these changes..." value="Generate a conventional commit message.">
+                        <button id="generate-btn" class="btn btn-primary">
+                            <span class="btn-text">Run Agent</span>
+                            <div class="loader-spinner hidden" id="main-loader"></div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="status-wrapper">
+                <div id="thinking-bar" class="thinking-bar hidden">
+                    <div class="bar-progress"></div>
+                </div>
+                <div class="status-label" id="agent-status">Ready to analyze repository</div>
+            </section>
+
+            <section id="result-section" class="result-container hidden">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h3>✨ Suggested Commit</h3>
+                        <div class="action-group">
+                            <span class="copy-feedback" id="copy-feedback">Copied to clipboard!</span>
+                            <button id="copy-btn" class="btn btn-secondary">Copy Message</button>
+                        </div>
+                    </div>
+                    <div class="result-body">
+                        <div class="message-box">
+                            <code id="commit-message"></code>
+                        </div>
+                        <div class="rationale-box">
+                            <h4>Rationale</h4>
+                            <p id="agent-rationale"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
