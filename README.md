@@ -2,7 +2,7 @@
 
 **CommitCraft AI** is a premium, agentic Git assistant designed to write high-quality, conventional commit messages for you. By leveraging the power of Gemini 3.0, it analyzes your repository's staged changes and history to craft the perfect description of your work.
 
-![CommitCraft Banner](favicon.png)
+[Link to the demo](https://youtu.be/WDHDgPPjDtI)
 
 ## ✨ Features
 
