@@ -18,7 +18,8 @@ AVAILABLE TOOLS:
 - get_git_status: Retrieves current branch and status of files.
 
 RESPONSE FORMAT:
-You MUST respond in JSON format ONLY. 
+You MUST respond with a SINGLE JSON object only. Do NOT provide any explanation, thoughts, or filler text before or after the JSON.
+
 - To use a tool: {"tool_name": "name", "tool_arguments": {}}
 - To provide the final answer: {"answer": "your commit message", "reasoning": "explanation"}
 """
@@ -36,22 +37,42 @@ class CommitAgent:
 
     def parse_response(self, text: str) -> dict:
         """
-        Cleans and parses the LLM's raw text response into a Python dictionary.
-        Handles markdown blocks and extraction of JSON structures.
+        Extracts the first valid JSON object from a potentially messy LLM response.
+        Uses a brace-counting algorithm to find a complete object.
         """
         text = text.strip()
+        
+        # 1. Try a direct parse first for clean responses
         try:
-            # Strip markdown JSON wrappers if present
-            clean_text = re.sub(r'```json\s*|\s*```', '', text)
-            start = clean_text.find('{')
-            end = clean_text.rfind('}')
-            
-            if start != -1 and end != -1:
-                json_str = clean_text[start:end+1]
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # 2. Brace-matching algorithm to find the first complete JSON object
+        start_index = text.find('{')
+        if start_index == -1:
+            raise ValueError(f"No JSON object found in response: {text[:200]}")
+
+        bracket_count = 0
+        end_index = -1
+        
+        for i in range(start_index, len(text)):
+            if text[i] == '{':
+                bracket_count += 1
+            elif text[i] == '}':
+                bracket_count -= 1
+                if bracket_count == 0:
+                    end_index = i
+                    break
+        
+        if end_index != -1:
+            json_str = text[start_index:end_index + 1]
+            try:
                 return json.loads(json_str)
-            return json.loads(clean_text)
-        except Exception as e:
-            raise ValueError(f"JSON Parsing Error: {str(e)} | Raw Output: {text[:200]}")
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Found object but failed to parse: {str(e)} | Content: {json_str[:100]}")
+        
+        raise ValueError(f"Could not find a valid JSON object in output: {text[:200]}")
 
     async def run(self, query: str, repo_path: str, mode: str = "stateful"):
         """

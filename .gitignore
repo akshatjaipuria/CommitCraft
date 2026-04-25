@@ -2,3 +2,4 @@
 agent.log
 __pycache__/
 *.pyc
+.venv/
