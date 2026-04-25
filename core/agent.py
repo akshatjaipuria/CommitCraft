@@ -76,7 +76,8 @@ class CommitAgent:
         ui_history = []
         history_buffer = f"USER_QUERY: {query}\nREPO_PATH: {repo_path}\n"
         
-        for i in range(5):
+        # Safety limit of 10 iterations to prevent infinite loops while allowing deep reasoning
+        for i in range(10):
             full_prompt = f"{SYSTEM_PROMPT}\n\nCONVERSATION HISTORY:\n{history_buffer}"
             
             try:
@@ -91,16 +92,18 @@ class CommitAgent:
             except Exception as e:
                 return self._handle_error(f"Stateless Loop Error: {str(e)}", ui_history)
 
+            # If the model provides an 'answer', it has finished its reasoning
             if "answer" in parsed:
                 return self._handle_final_answer(parsed, ui_history, "stateless")
 
+            # If the model requests a tool, we execute it and continue the loop
             if "tool_name" in parsed:
                 result_str = await self._execute_tool(parsed["tool_name"], repo_path, ui_history)
                 history_buffer += f"\nModel Requested: {parsed['tool_name']}\nTool Output: {result_str}\n"
             else:
                 history_buffer += "\nError: Response missing 'answer' or 'tool_name'.\n"
 
-        return self._handle_error("Agent reached maximum iteration limit.", ui_history)
+        return self._handle_error("Agent reached maximum safety iteration limit (10).", ui_history)
 
     async def _run_stateful_loop(self, query: str, repo_path: str):
         """
@@ -111,7 +114,8 @@ class CommitAgent:
         ui_history = []
         current_input = f"{SYSTEM_PROMPT}\n\nUSER_QUERY: {query}\nREPO_PATH: {repo_path}"
         
-        for i in range(5):
+        # Safety limit of 10 iterations to prevent infinite loops while allowing deep reasoning
+        for i in range(10):
             try:
                 log_event("STATEFUL_LOOP_STEP", i + 1)
                 response = await anyio.to_thread.run_sync(lambda: chat.send_message(current_input))
@@ -119,26 +123,29 @@ class CommitAgent:
             except Exception as e:
                 return self._handle_error(f"Stateful Loop Error: {str(e)}", ui_history)
 
+            # If the model provides an 'answer', it has finished its reasoning
             if "answer" in parsed:
                 return self._handle_final_answer(parsed, ui_history, "stateful")
 
+            # If the model requests a tool, we execute it and continue the loop
             if "tool_name" in parsed:
                 result_str = await self._execute_tool(parsed["tool_name"], repo_path, ui_history)
                 current_input = f"TOOL_RESULT for {parsed['tool_name']}: {result_str}"
             else:
-                current_input = "Error: Invalid JSON format. Provide 'answer' or 'tool_name'."
+                current_query = "Error: Your response did not contain an 'answer' or a 'tool_name'. Please provide one in JSON format."
 
-        return self._handle_error("Agent reached maximum iteration limit.", ui_history)
+        return self._handle_error("Agent reached maximum safety iteration limit (10).", ui_history)
 
     async def _execute_tool(self, t_name: str, repo_path: str, ui_history: list) -> str:
-        """Helper to execute a tool and log results."""
+        """Helper to execute a tool and log full results for transparency."""
         log_event("TOOL_CALL", t_name)
         tool_func = tools_map.get(t_name, lambda **kwargs: "Error: Tool not found.")
         
         result_str = await anyio.to_thread.run_sync(lambda: tool_func(repo_path=repo_path))
         
         ui_history.append({"type": "tool", "name": t_name, "status": "Success"})
-        log_event("TOOL_RESULT", {"name": t_name, "len": len(result_str)})
+        # Log the full result content so it's visible in agent.log
+        log_event("TOOL_RESULT", {"name": t_name, "data": result_str})
         return result_str
 
     def _handle_final_answer(self, parsed: dict, ui_history: list, mode: str):
